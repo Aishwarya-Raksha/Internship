@@ -1,0 +1,102 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm_notebook
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+def sigmoid(x):
+  return 1/(1+np.exp(-x))
+
+def dsigmoid(x):
+  return x*(1-x)
+
+def relu(x):
+  return abs(x)*(x>0)
+
+def drelu(x):
+  return 1.*(x>0.)
+
+def lrelu(x):
+  return np.where(x>0.,x,x*0.01)
+
+def dlrelu(x):
+  dx=np.ones_like(x)
+  dx[x<0.]=0.01
+  return dx
+
+def tanh(x):
+  return np.tanh(x)
+
+def dtanh(x):
+  return 1.0-(np.power(np.tanh(x),2))
+  
+def feed_forward(data_in,w0,w1,w2,w3,b):
+  layer0=data_in
+  layer1=relu(np.dot(layer0,w0))
+  layer2=relu(np.dot(layer1,w1))
+  layer3=relu(np.dot(layer2,w2))
+  layer4=np.dot(layer3,w3) +b
+
+  return layer0,layer1,layer2,layer3,layer4
+  
+def backpropagate(i,layer0,layer1,layer2,layer3,layer4,actual_y,w0,w1,w2,w3,b,learning_rate):
+
+  op_delta=layer4-actual_y
+  dh4=np.dot(layer3.T,op_delta)
+
+  l3_error=op_delta.dot(w3.T)
+  l3_delta=l3_error*drelu(layer3)
+  dh3=np.dot(layer2.T,l3_delta)
+
+  l2_error=l3_delta.dot(w2.T)
+  l2_delta=l2_error*drelu(layer2)
+  dh2=np.dot(layer1.T,l2_delta)
+
+  l1_error=l2_delta.dot(w1.T)
+  l1_delta=l1_error*drelu(layer1)
+  dh1=np.dot(layer0.T,l1_delta)
+
+  w3=w3-(learning_rate*dh4)
+  w2=w2-(learning_rate*dh3)
+  w1=w1-(learning_rate*dh2)
+  w0=w0-(learning_rate*dh1)
+  b=b-(learning_rate*np.mean(op_delta))
+
+  if i%50==0 and (i!=0):
+    loss=np.mean(np.power(layer4-actual_y,2))
+    loss_curve.append(loss)
+    iters.append(int(i))
+    
+    if i%1000==0:
+      print("\n",int(i),loss)
+
+  return w0,w1,w2,w3,b
+  
+d=pd.read_csv('/content/wine.csv')
+
+d=(d-d.mean())/(d.max()-d.min())
+x=np.array(d.iloc[:,:-1])
+y=np.array(d.iloc[:,-1])
+y=y.reshape(len(y),1)
+xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.2)
+
+w0=np.random.random((13,50))
+w1=np.random.random((50,30))
+w2=np.random.random((30,5))
+w3=np.random.random((5,1))
+b=np.random.random((1,1))
+epochs=10000
+
+loss_curve=[]
+iters=[]
+
+for i in tqdm_notebook(range(epochs)):
+  layer0,layer1,layer2,layer3,layer4=feed_forward(xtrain,w0,w1,w2,w3,b)
+  w0,w1,w2,w3,b=backpropagate(i,layer0,layer1,layer2,layer3,layer4,ytrain,w0,w1,w2,w3,b,0.001)
+  
+layer0,layer1,layer2,layer3,layer4=feed_forward(xtest,w0,w1,w2,w3,b)
+loss=np.mean(np.power(layer4-ytest,2))
+loss
+
+plt.plot(iters,loss_curve,'g-')
