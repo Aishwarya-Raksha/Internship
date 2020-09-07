@@ -1,6 +1,3 @@
-# KNN on Diabetes dataset
-collab link ------>  https://colab.research.google.com/drive/1PiiRKohm0V3pM9BeUCisv5FeIxlaMLZe#scrollTo=wHtthV28JQOE
-
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
